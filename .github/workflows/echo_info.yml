@@ -11,7 +11,7 @@ jobs:
       branch: ${{ steps.check_step.outputs.branch }}
     steps:
       - name: Echo github.event.base_ref
-        run: echo "${{ github.event.base_ref }}"
+        run: echo "${{ github.base_ref }}"
       - name: Checkout
         uses: actions/checkout@v2
         with:
