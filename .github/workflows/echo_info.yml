@@ -1,21 +1,36 @@
 name: Echo some info
 
 on:
-  pull_request:
+  push:
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
-  cancel-in-progress: true
-
+# Borrowed from https://stackoverflow.com/a/72959712
 jobs:
-  job1:
+  check:
     runs-on: ubuntu-latest
+    outputs:
+      branch: ${{ steps.check_step.outputs.branch }}
     steps:
-      - name: checkout source code
-        uses: actions/checkout@v1
-      - name: Get Branch
+      - name: Echo github.event.base_ref
+        run: echo "${{ github.event.base_ref }}"
+      - name: Echo github.base_ref
+        run: echo "${{ github.base_ref }}"
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get current branch
+        id: check_step
         run: |
           raw=$(git branch -r --contains ${{ github.ref }})
-          branch=${raw/origin\/}
-          echo ::set-env name=BRANCH::$branch
-      - run: echo ${{ env.BRANCH }}
+          branch=${raw##*/}
+          echo "::set-output name=branch::$branch"
+          echo "Branch is $branch."
+
+  job2:
+    runs-on: ubuntu-latest
+    needs: check # Wait for check step to finish
+    if: ${{ needs.check.outputs.branch == 'main' }} # only run if branch is main
+
+    steps:
+      - run: echo "Running task on main only..."
